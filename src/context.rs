@@ -17,11 +17,8 @@ use log::warn;
 #[cfg(feature = "local-dns-relay")]
 use lru_time_cache::LruCache;
 use spin::Mutex;
-#[cfg(feature = "trust-dns")]
 use trust_dns_resolver::TokioAsyncResolver;
 
-#[cfg(feature = "trust-dns")]
-use crate::relay::dns_resolver::create_resolver;
 #[cfg(not(feature = "local-dns-relay"))]
 use crate::relay::dns_resolver::resolve;
 #[cfg(feature = "local-dns-relay")]
@@ -32,7 +29,10 @@ use crate::{
     acl::AccessControl,
     config::{Config, ConfigType, ServerConfig},
     crypto::CipherType,
-    relay::socks5::Address,
+    relay::{
+        dns_resolver::create_resolver,
+        socks5::Address,
+    },
 };
 
 // Entries for server's bloom filter
@@ -122,11 +122,9 @@ impl PingPongBloom {
 ///
 /// Shared between UDP and TCP servers
 pub struct ServerState {
-    #[cfg(feature = "trust-dns")]
     dns_resolver: Option<TokioAsyncResolver>,
 }
 
-#[cfg(feature = "trust-dns")]
 impl ServerState {
     /// Create a global shared server state
     pub async fn new_shared(config: &Config) -> SharedServerState {
@@ -143,14 +141,6 @@ impl ServerState {
     /// Get the global shared resolver
     pub fn dns_resolver(&self) -> Option<&TokioAsyncResolver> {
         self.dns_resolver.as_ref()
-    }
-}
-
-#[cfg(not(feature = "trust-dns"))]
-impl ServerState {
-    /// Create a global shared server state
-    pub async fn new_shared(_config: &Config, _rt: Handle) -> SharedServerState {
-        Arc::new(ServerState {})
     }
 }
 
@@ -269,7 +259,6 @@ impl Context {
         &mut self.config.server[idx]
     }
 
-    #[cfg(feature = "trust-dns")]
     /// Get the global shared resolver
     pub fn dns_resolver(&self) -> Option<&TokioAsyncResolver> {
         self.server_state.dns_resolver()

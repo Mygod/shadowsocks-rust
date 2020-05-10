@@ -63,7 +63,6 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-#[cfg(feature = "trust-dns")]
 use trust_dns_resolver::config::{NameServerConfigGroup, ResolverConfig};
 use url::{self, Url};
 
@@ -1225,7 +1224,6 @@ impl Config {
     }
 
     #[doc(hidden)]
-    #[cfg(feature = "trust-dns")]
     /// Get `trust-dns`'s `ResolverConfig` by DNS configuration string
     pub fn get_dns_config(&self) -> Option<ResolverConfig> {
         self.dns.as_ref().and_then(|ds| {

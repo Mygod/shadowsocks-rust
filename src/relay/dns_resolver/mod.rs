@@ -3,24 +3,12 @@
 
 use std::{io, net::SocketAddr};
 
-use cfg_if::cfg_if;
-
 use crate::{config::ServerAddr, context::Context};
 
 mod tokio_dns_resolver;
+mod trust_dns_resolver;
 
-cfg_if! {
-    if #[cfg(feature = "trust-dns")] {
-        mod trust_dns_resolver;
-
-        /// Use trust-dns DNS resolver (with DNS cache)
-        pub use self::trust_dns_resolver::{create_resolver, resolve};
-    } else {
-
-        /// Use tokio's builtin DNS resolver
-        pub use self::tokio_dns_resolver::resolve;
-    }
-}
+pub use self::trust_dns_resolver::{create_resolver, resolve};
 
 /// Helper macro for resolving host and then process each addresses
 #[macro_export]

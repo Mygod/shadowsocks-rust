@@ -39,7 +39,7 @@ shadowsocks is a fast tunnel proxy that helps you bypass firewalls.
 
 * `local-http` - Allow using HTTP protocol for `sslocal`
 
-Default features: `["sodium", "rc4", "aes-cfb", "aes-ctr", "trust-dns", "local-http"]`.
+Default features: `["sodium", "rc4", "aes-cfb", "aes-ctr", "local-http"]`.
 
 NOTE: To disable dependency of OpenSSL, just disable feature `rc4`, `aes-cfb`, `aes-ctr`, `camellia-cfb`.
 
