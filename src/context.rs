@@ -122,25 +122,24 @@ impl PingPongBloom {
 ///
 /// Shared between UDP and TCP servers
 pub struct ServerState {
-    dns_resolver: Option<TokioAsyncResolver>,
+    dns_resolver: TokioAsyncResolver,
 }
 
 impl ServerState {
     /// Create a global shared server state
     pub async fn new_shared(config: &Config) -> SharedServerState {
         let state = ServerState {
-            dns_resolver: match create_resolver(config.get_dns_config(), config.timeout, config.ipv6_first).await {
-                Ok(resolver) => Some(resolver),
-                Err(..) => None,
-            },
+            dns_resolver: create_resolver(config.get_dns_config(), config.timeout, config.ipv6_first)
+                .await
+                .expect("Failed to create dns_resolver"),
         };
 
         Arc::new(state)
     }
 
     /// Get the global shared resolver
-    pub fn dns_resolver(&self) -> Option<&TokioAsyncResolver> {
-        self.dns_resolver.as_ref()
+    pub fn dns_resolver(&self) -> &TokioAsyncResolver {
+        &self.dns_resolver
     }
 }
 
@@ -260,7 +259,7 @@ impl Context {
     }
 
     /// Get the global shared resolver
-    pub fn dns_resolver(&self) -> Option<&TokioAsyncResolver> {
+    pub fn dns_resolver(&self) -> &TokioAsyncResolver {
         self.server_state.dns_resolver()
     }
 

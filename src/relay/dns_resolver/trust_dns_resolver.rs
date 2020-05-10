@@ -12,7 +12,6 @@ use trust_dns_resolver::{
     TokioAsyncResolver,
 };
 
-use super::tokio_dns_resolver::resolve as tokio_resolve;
 use crate::context::Context;
 
 /// Create a `trust-dns` asynchronous DNS resolver
@@ -91,18 +90,15 @@ pub async fn create_resolver(
 
 /// Perform a DNS resolution
 pub async fn resolve(context: &Context, addr: &str, port: u16) -> io::Result<Vec<SocketAddr>> {
-    match context.dns_resolver() {
-        Some(resolver) => match resolver.lookup_ip(addr).await {
-            Ok(lookup_result) => Ok(lookup_result.iter().map(|ip| SocketAddr::new(ip, port)).collect()),
-            Err(err) => {
-                let err = Error::new(
-                    ErrorKind::Other,
-                    format!("dns resolve {}:{} error: {}", addr, port, err),
-                );
-                Err(err)
-            }
-        },
-        // Fallback to tokio's DNS resolver
-        None => tokio_resolve(context, addr, port).await,
+    let resolver = context.dns_resolver();
+    match resolver.lookup_ip(addr).await {
+        Ok(lookup_result) => Ok(lookup_result.iter().map(|ip| SocketAddr::new(ip, port)).collect()),
+        Err(err) => {
+            let err = Error::new(
+                ErrorKind::Other,
+                format!("dns resolve {}:{} error: {}", addr, port, err),
+            );
+            Err(err)
+        }
     }
 }

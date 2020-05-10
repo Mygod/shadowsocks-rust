@@ -5,7 +5,6 @@ use std::{io, net::SocketAddr};
 
 use crate::{config::ServerAddr, context::Context};
 
-mod tokio_dns_resolver;
 mod trust_dns_resolver;
 
 pub use self::trust_dns_resolver::{create_resolver, resolve};
