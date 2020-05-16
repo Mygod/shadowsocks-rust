@@ -27,14 +27,14 @@ use crate::{
 
 pub mod upstream;
 
-fn parse_arpa_name(name: &Name) -> Option<IpAddr> {
+fn parse_arpa_name(name: &Name) -> Result<IpAddr, &'static str> {
     let mut iter = name.iter().rev();
     let mut next = || match iter.next() {
         Some(label) => std::str::from_utf8(label).unwrap_or("*"),
         None => "0",    // zero fill the missing labels
     };
     if !"arpa".eq_ignore_ascii_case(next()) {
-        return None;
+        return Err("not an arpa address");
     }
     match &next().to_ascii_lowercase()[..] {
         "in-addr" => {
@@ -42,24 +42,24 @@ fn parse_arpa_name(name: &Name) -> Option<IpAddr> {
             for octet in octets.iter_mut() {
                 match next().parse() {
                     Ok(result) => *octet = result,
-                    Err(_) => return None,
+                    Err(_) => return Err("failed to parse IPv4 address"),
                 }
             }
-            Some(IpAddr::V4(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3])))
+            Ok(IpAddr::V4(Ipv4Addr::new(octets[0], octets[1], octets[2], octets[3])))
         }
         "ip6" => {
             let mut segments: [u16; 8] = [0; 8];
             for segment in segments.iter_mut() {
                 match u16::from_str_radix(&[next(), next(), next(), next()].concat(), 16) {
                     Ok(result) => *segment = result,
-                    Err(_) => return None,
+                    Err(_) => return Err("failed to parse IPv6 address"),
                 }
             }
-            Some(IpAddr::V6(Ipv6Addr::new(
+            Ok(IpAddr::V6(Ipv6Addr::new(
                 segments[0], segments[1], segments[2], segments[3], segments[4], segments[5], segments[6], segments[7]
             )))
         }
-        _ => None,
+        _ => Err("not a supported arpa address"),
     }
 }
 
@@ -83,8 +83,8 @@ fn should_forward_by_query(acl: &Option<AccessControl>, query: &Query) -> Option
             Some(acl.is_default_in_proxy_list())
         } else if query.query_type() == RecordType::PTR {
             Some(match parse_arpa_name(query.name()) {
-                Some(ip) => acl.check_ip_in_proxy_list(&ip),
-                None => acl.is_default_in_proxy_list(),
+                Ok(ip) => acl.check_ip_in_proxy_list(&ip),
+                Err(_) => acl.is_default_in_proxy_list(),
             })
         } else {
             let result = check_name_in_proxy_list(acl, query.name());
